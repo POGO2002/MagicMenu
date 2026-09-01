@@ -8,11 +8,7 @@ import org.geysermc.cumulus.component.StepSliderComponent;
 import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.form.SimpleForm;
 import org.geysermc.cumulus.util.FormImage;
-import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.api.connection.GeyserConnection;
-import org.geysermc.geyser.api.util.PlatformType;
-import org.geysermc.geyser.command.CommandRegistry;
-import org.geysermc.geyser.session.GeyserSession;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -170,7 +166,7 @@ public class MenuHandler {
                             Float.parseFloat(options[4]));
                 }
                 case "step-slider" -> {
-                    if (options.length < 1) {
+                    if (options.length < 3) {
                         MagicMenu.getLogger().error("Invalid slider placeholder: " + placeholder + " in " + name);
                         completableFuture.complete(ResultType.FAILURE);
                         return completableFuture;
@@ -244,26 +240,11 @@ public class MenuHandler {
     }
 
     private static void sendCommand(GeyserConnection connection, String command) {
-        GeyserSession session = (GeyserSession) connection;
-
         MagicMenu.debug("Sending command: " + command);
-
-        if (session.getGeyser().getPlatformType() == PlatformType.STANDALONE ||
-                session.getGeyser().getPlatformType() == PlatformType.VIAPROXY) {
-            // try to handle the command within the standalone/viaproxy command manager
-            String[] args = command.split(" ");
-            if (args.length > 0) {
-                String root = args[0];
-
-                CommandRegistry registry = GeyserImpl.getInstance().commandRegistry();
-                if (registry.rootCommands().contains(root)) {
-                    registry.runCommand(session, command);
-                    return; // don't pass the command to the java server
-                }
-            }
-        }
-
-        session.sendCommand(command);
+        // Geyser's public API now exposes command execution directly on the connection.
+        // This avoids depending on Geyser internals and works across supported platforms,
+        // including Standalone and ViaProxy.
+        connection.sendCommand(command);
     }
 
     enum ResultType {
